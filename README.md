@@ -1,4 +1,4 @@
-# PyYaraScanner
+# PyaraScanner
 
 A simple many-rules to many-files YARA scanner for incident response or malware zoos.
 ## Prerequisites
