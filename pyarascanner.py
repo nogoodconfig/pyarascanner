@@ -1,3 +1,6 @@
+#PyYaraScanner
+#https://github.com/nogoodconfig/pyarascanner
+
 import argparse
 import os
 import hashlib
@@ -79,7 +82,7 @@ def loadRules(dir):
     if compile_error > 0:
         err(str(compile_error) +" YARA rules failed to compile...")
     inf(str(compile_success) +" YARA rules compiled successfully...")
-    # Finished compiling rules
+    # Finished compiling
 
 def md5Hash(file):
     #https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
