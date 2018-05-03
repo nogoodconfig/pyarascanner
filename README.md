@@ -16,6 +16,7 @@ To run with default settings, just specify a folder for .yar rules and a startin
 ```
 yarascan2.py C:\Rules C:\Files
 ```
+
 Optional arguments:
 
 ```
