@@ -14,17 +14,17 @@ pip install yara-python
 To run with default settings, just specify a folder for .yar rules and a starting point for files to scan. All directories for both inputs are scanned recursively.
 
 ```
-yarascan2.py C:\Rules C:\Files
+pyarascanner.py C:\Rules C:\Files
 ```
 Optional arguments:
 
 ```
-yarascan2.py [-h] [-e] [-a] [-l LOG] [-m MAXSIZE] rules_path scan_path
+pyarascanner.py [-h] [-e] [-a] [-l LOG] [-m MAXSIZE] rules_path scan_path
 ```
 
 ### Optional Arguments
 
-* -h, --help            show this help message and exit
+* -h, --help            Show help
 * -e, --errors          Show all errors
 * -a, --alerts          Show alerts only
 * -l LOG, --log LOG     Output to specified log file
