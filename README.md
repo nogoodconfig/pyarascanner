@@ -22,8 +22,6 @@ Optional arguments:
 yarascan2.py [-h] [-e] [-a] [-l LOG] [-m MAXSIZE] rules_path scan_path
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
-
 ### Optional Arguments
 
 * -h, --help            show this help message and exit
