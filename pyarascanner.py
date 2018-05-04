@@ -22,7 +22,7 @@ def msg(code,text):
         output = "[ERROR] " +text
     elif code is 3:
         output = "[FOUND] " +text
-    print output
+    print(output)
     writeout = str(output) +"\n"
     fout.write(writeout)
 
