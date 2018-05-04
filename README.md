@@ -3,7 +3,7 @@
 A simple many-rules to many-files YARA scanner for incident response or malware zoos.
 ## Prerequisites
 
-Python 2.7 with the Yara-Python package
+YARA installed and Python 3+ with the Yara-Python package
 
 ``` 
 pip install yara-python
