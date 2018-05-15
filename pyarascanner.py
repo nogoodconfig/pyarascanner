@@ -10,7 +10,7 @@ import datetime
 yara_hashes = []
 yara_filepaths = {}
 yara_compiled = []
-fout = open("yarascan_" +str(datetime.datetime.now()), "w")
+fout = open("yarascan_" +str('{0:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())), "w")
 conf = {'alertsonly':False, 'errors':True, 'log':'','maxsize':150, 'rulespath':'', 'scanpath':''}
 
 def msg(code,text):
