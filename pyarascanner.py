@@ -5,6 +5,7 @@ import argparse
 import os
 import hashlib
 import datetime
+import yara
 #import yara (declared later)
 
 yara_hashes = []
@@ -14,6 +15,7 @@ fout = open("yarascan_" +str('{0:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.no
 conf = {'alertsonly':False, 'errors':True, 'log':'','maxsize':150, 'rulespath':'', 'scanpath':''}
 
 def msg(code,text):
+    text = str(text)
     if code is 0:
         output = "[ERROR] " +text
     elif code is 1:
@@ -23,7 +25,7 @@ def msg(code,text):
     elif code is 3:
         output = "[FOUND] " +text
     print(output)
-    writeout = str(output) +"\n"
+    writeout = output +"\n"
     fout.write(writeout)
 
 def err(text):
@@ -40,8 +42,9 @@ def inf(text):
 
 try:
     import yara
-except:
+except Exception as e:
     msg(2, "Yara-Python module error! Make sure you have 'yara-python' not 'yara'!")
+    msg(2, e)
     exit(1)
 
 def loadRules(dir):
@@ -151,6 +154,7 @@ for root, directories, filenames in os.walk(conf['scanpath']):
             ffnd(path + " [" + str(mb) + "MB]: " +str(file_matches))
         else:
             inf(path + " [" + str(mb) + "MB]: No matches")
+
 inf("Finished")
 fout.close()
 exit(0)
