@@ -1,17 +1,20 @@
 # PyaraScanner
 
-A simple many-rules to many-files YARA scanner for incident response or malware zoos.
+A simple many-rules to many-files YARA scanner for incident response or malware zoos
 ## Prerequisites
 
 YARA installed and Python 3+ with the Yara-Python package
+
 
 ``` 
 pip install yara-python
 ```
 
+Yara-Python requires Microsoft Visual C++ Build Tools available [here](http://landinghub.visualstudio.com/visual-cpp-build-tools) under 'Build Tools for Visual Studio 2017' 
+
 ## Running a scan
 
-To run with default settings, just specify a folder for .yar rules and a starting point for files to scan. All directories for both inputs are scanned recursively.
+To run with default settings, just specify a folder for .yar rules and a starting point for files to scan. All directories for both inputs are scanned recursively
 
 ```
 pyarascanner.py Yara_Rules C:\
