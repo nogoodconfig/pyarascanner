@@ -1,61 +1,61 @@
-#PyYaraScanner
-#https://github.com/nogoodconfig/pyarascanner
+# PyYaraScanner
+# https://github.com/nogoodconfig/pyarascanner
 
 import argparse
 import os
 import hashlib
-import datetime
-import yara
-#import yara (declared later)
+from datetime import datetime
+# yara-python imported later
 
 yara_hashes = []
 yara_filepaths = {}
 yara_compiled = []
-fout = open("yarascan_" +str('{0:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())), "w")
-conf = {'alertsonly':False, 'errors':True, 'log':'','maxsize':150, 'rulespath':'', 'scanpath':''}
 
-def msg(code,text):
+file_out = open("yarascan_{0}.txt".format(datetime.now().strftime('%Y-%m-%d-%H:%M:%S')), "w")
+conf = {'alerts_only': False, 'errors': True, 'log': '', 'maxsize': 150, 'rules_path': '', 'scan_path': ''}
+
+
+def msg(code, text):
     text = str(text)
-    if code is 0:
-        output = "[ERROR] " +text
-    elif code is 1:
-        output = "[INFO] " +text
-    elif code is 2:
-        output = "[ERROR] " +text
-    elif code is 3:
-        output = "[FOUND] " +text
+    timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+    output = '{0}: {1} {2}'.format(timestamp, code, text)
     print(output)
-    writeout = output +"\n"
-    fout.write(writeout)
+    file_out.write(output + '\n')
 
-def err(text):
-    msg(0, text)
 
-def ferr(text):
-    msg(2, text)
+def error(text):
+    msg('[ERROR:GENERAL]', text)
 
-def ffnd(text):
-    msg(3, text)
 
-def inf(text):
-    msg(1, text)
+def file_error(text):
+    msg('[ERROR:FILE]', text)
+
+
+def file_found(text):
+    msg('[FOUND]', text)
+
+
+def info(text):
+    msg('[INFO]', text)
+
 
 try:
     import yara
 except Exception as e:
-    msg(2, "Yara-Python module error! Make sure you have 'yara-python' not 'yara'!")
-    msg(2, e)
+    file_error("Yara-Python module error! Make sure you have 'yara-python' not 'yara'!")
+    file_error(e)
     exit(1)
 
-def loadRules(dir):
+
+def load_rules(directory):
     rules_counter = 0
     rules_counter_duplicates = 0
-    inf("Getting rules from " +dir +"...")
-    for root, directories, filenames in os.walk(dir):
-        for filename in filenames:
+    info("Getting rules from " + directory + "...")
+    for root, directories, file_names in os.walk(directory):
+        for filename in file_names:
             if filename.endswith(".yar"):
                 md5 = md5Hash(os.path.join(root, filename))
-                #Check for duplicates...
+                # Check for duplicates...
                 if md5 in yara_hashes:
                     rules_counter_duplicates = rules_counter_duplicates + 1
                 else:
@@ -66,13 +66,13 @@ def loadRules(dir):
             else:
                 continue
     if rules_counter is 0:
-        err("No YARA rules found in the given directory!")
+        error("No YARA rules found in the given directory!")
         exit(1)
-    inf(str(rules_counter + rules_counter_duplicates) + " YARA rules found...")
-    inf(str(rules_counter_duplicates) + " duplicate YARA rules identified and removed from the set...")
-    inf(str(rules_counter) + " YARA rules prepared to compile...")
+    info(str(rules_counter + rules_counter_duplicates) + " YARA rules found...")
+    info(str(rules_counter_duplicates) + " duplicate YARA rules identified and removed from the set...")
+    info(str(rules_counter) + " YARA rules prepared to compile...")
 
-    #Compile .yar files into yara compiled objects, store in list, cleanly error bad files
+    # Compile .yar files into yara compiled objects, store in list, cleanly error bad files
     compile_success = 0
     compile_error = 0
     for rule in yara_filepaths:
@@ -83,12 +83,12 @@ def loadRules(dir):
             compile_error += 1
             continue
     if compile_error > 0:
-        err(str(compile_error) +" YARA rules failed to compile...")
-    inf(str(compile_success) +" YARA rules compiled successfully...")
+        error(str(compile_error) + " YARA rules failed to compile...")
+    info(str(compile_success) + " YARA rules compiled successfully...")
     # Finished compiling
 
 def md5Hash(file):
-    #https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
+    # https://stackoverflow.com/questions/22058048/hashing-a-file-in-python
     BUF_SIZE = 65536
     md5 = hashlib.md5()
     with open(file, 'rb') as f:
@@ -112,34 +112,34 @@ args = parser.parse_args()
 if args.errors:
     conf['errors'] = True
 if args.alerts:
-    conf['alertsonly'] = True
+    conf['alerts_only'] = True
     conf['errors'] = False
 if args.log:
     try:
-        conf['log'] = open(args.log,'w')
+        conf['log'] = open(args.log, 'w')
     except:
-        err("Could not create log file '" +str(args.log) +"'")
+        error("Could not create log file '" + str(args.log) + "'")
         exit(1)
 if args.maxsize:
     conf['maxsize'] = args.maxsize
     if args.maxsize > 1024:
-        inf("Setting the maximum file size above 1GB is strongly discouraged!")
+        info("Setting the maximum file size above 1GB is strongly discouraged!")
 
 if (os.path.exists(args.rules_path)) and (os.path.exists(args.scan_path)):
-    conf['rulespath'] = args.rules_path
-    loadRules(conf['rulespath'])
-    conf['scanpath'] = args.scan_path
+    conf['rules_path'] = args.rules_path
+    load_rules(conf['rules_path'])
+    conf['scan_path'] = args.scan_path
 else:
-    err("Could not read rules or scan path!")
+    error("Could not read rules or scan path!")
     exit(1)
 
 
-for root, directories, filenames in os.walk(conf['scanpath']):
-    for filename in filenames:
-        path = os.path.join(root,filename)
+for root, directories, file_names in os.walk(conf['scan_path']):
+    for filename in file_names:
+        path = os.path.join(root, filename)
         mb = round((float(os.path.getsize(path)) * 0.00000095367432), 2)
         if mb > conf['maxsize']:
-            ferr(path + " [" + str(mb) + "MB]: File too big")
+            file_error(path + " [" + str(mb) + "MB]: File too big")
             break
         file_matches = []
         for rule in yara_compiled:
@@ -148,13 +148,13 @@ for root, directories, filenames in os.walk(conf['scanpath']):
                 if len(matches) > 0:
                     file_matches.append(matches)
             except:
-                ferr(path + " [" + str(mb) + "MB]: Unknown error")
+                file_error(path + " [" + str(mb) + "MB]: Unknown error")
                 break
         if len(file_matches) > 0:
-            ffnd(path + " [" + str(mb) + "MB]: " +str(file_matches))
+            file_found(path + " [" + str(mb) + "MB]: " +str(file_matches))
         else:
-            inf(path + " [" + str(mb) + "MB]: No matches")
+            info(path + " [" + str(mb) + "MB]: No matches")
 
-inf("Finished")
-fout.close()
+info("Finished")
+file_out.close()
 exit(0)
