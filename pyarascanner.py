@@ -11,7 +11,7 @@ yara_hashes = []
 yara_filepaths = {}
 yara_compiled = []
 
-file_out = open("yarascan_{0}.txt".format(datetime.now().strftime('%Y-%m-%d-%H:%M:%S')), "w")
+file_out = open("yarascan_{0}.txt".format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S')), "w")
 conf = {'alerts_only': False, 'errors': True, 'log': '', 'maxsize': 150, 'rules_path': '', 'scan_path': ''}
 
 
@@ -100,61 +100,64 @@ def md5Hash(file):
 
     return "{0}".format(md5.hexdigest())
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('rules_path')
+    parser.add_argument('scan_path')
+    parser.add_argument("-e", "--errors", help="Show all errors", action="store_true")
+    parser.add_argument("-a", "--alerts", help="Show alerts only", action="store_true")
+    parser.add_argument("-l", "--log", help="Output to specified log file")
+    parser.add_argument("-m", "--maxsize", type=int, help="Set maximum file size (MB)")
+    args = parser.parse_args()
+    if args.errors:
+        conf['errors'] = True
+    if args.alerts:
+        conf['alerts_only'] = True
+        conf['errors'] = False
+    if args.log:
+        try:
+            conf['log'] = open(args.log, 'w')
+        except:
+            error("Could not create log file '" + str(args.log) + "'")
+            exit(1)
+    if args.maxsize:
+        conf['maxsize'] = args.maxsize
+        if args.maxsize > 1024:
+            info("Setting the maximum file size above 1GB is strongly discouraged!")
 
-parser = argparse.ArgumentParser()
-parser.add_argument('rules_path')
-parser.add_argument('scan_path')
-parser.add_argument("-e", "--errors", help="Show all errors", action="store_true")
-parser.add_argument("-a", "--alerts", help="Show alerts only", action="store_true")
-parser.add_argument("-l", "--log", help="Output to specified log file")
-parser.add_argument("-m", "--maxsize", type=int, help="Set maximum file size (MB)")
-args = parser.parse_args()
-if args.errors:
-    conf['errors'] = True
-if args.alerts:
-    conf['alerts_only'] = True
-    conf['errors'] = False
-if args.log:
-    try:
-        conf['log'] = open(args.log, 'w')
-    except:
-        error("Could not create log file '" + str(args.log) + "'")
+    if (os.path.exists(args.rules_path)) and (os.path.exists(args.scan_path)):
+        conf['rules_path'] = args.rules_path
+        load_rules(conf['rules_path'])
+        conf['scan_path'] = args.scan_path
+    else:
+        error("Could not read rules or scan path!")
         exit(1)
-if args.maxsize:
-    conf['maxsize'] = args.maxsize
-    if args.maxsize > 1024:
-        info("Setting the maximum file size above 1GB is strongly discouraged!")
-
-if (os.path.exists(args.rules_path)) and (os.path.exists(args.scan_path)):
-    conf['rules_path'] = args.rules_path
-    load_rules(conf['rules_path'])
-    conf['scan_path'] = args.scan_path
-else:
-    error("Could not read rules or scan path!")
-    exit(1)
 
 
-for root, directories, file_names in os.walk(conf['scan_path']):
-    for filename in file_names:
-        path = os.path.join(root, filename)
-        mb = round((float(os.path.getsize(path)) * 0.00000095367432), 2)
-        if mb > conf['maxsize']:
-            file_error(path + " [" + str(mb) + "MB]: File too big")
-            break
-        file_matches = []
-        for rule in yara_compiled:
-            try:
-                matches = rule.match(str(path))
-                if len(matches) > 0:
-                    file_matches.append(matches)
-            except:
-                file_error(path + " [" + str(mb) + "MB]: Unknown error")
+    for root, directories, file_names in os.walk(conf['scan_path']):
+        for filename in file_names:
+            path = os.path.join(root, filename)
+            mb = round((float(os.path.getsize(path)) * 0.00000095367432), 2)
+            if mb > conf['maxsize']:
+                file_error(path + " [" + str(mb) + "MB]: File too big")
                 break
-        if len(file_matches) > 0:
-            file_found(path + " [" + str(mb) + "MB]: " +str(file_matches))
-        else:
-            info(path + " [" + str(mb) + "MB]: No matches")
+            file_matches = []
+            for rule in yara_compiled:
+                try:
+                    matches = rule.match(str(path))
+                    if len(matches) > 0:
+                        file_matches.append(matches)
+                except:
+                    file_error(path + " [" + str(mb) + "MB]: Unknown error")
+                    break
+            if len(file_matches) > 0:
+                file_found(path + " [" + str(mb) + "MB]: " +str(file_matches))
+            else:
+                info(path + " [" + str(mb) + "MB]: No matches")
 
-info("Finished")
-file_out.close()
-exit(0)
+    info("Finished")
+    file_out.close()
+    exit(0)
+
+if __name__ == '__main__':
+    main()
