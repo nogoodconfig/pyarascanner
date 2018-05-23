@@ -33,10 +33,15 @@ class Messenger:
     """
     Print/logging class
     """
+
     def __init__(self, log_file_path="yarascan_{0}.txt".format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))):
-        self.log_file = open(log_file_path, 'w')
+        #Replaced with log_result function
+        #self.log_file = open(log_file_path, 'w')
+        pass
+
 
     @staticmethod
+
     def make_message(code, text):
         timestamp = datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         output = '{0}: {1} {2}'.format(timestamp, code, text)
@@ -44,12 +49,12 @@ class Messenger:
     
     def output_message(self, message):
         print(message)
-        self.log_file.write(message + '\n')
+        return message
         
     def error(self, text, sub_code='GENERAL'):
         code = '[ERROR:{0}]'.format(sub_code)
         m = self.make_message(code, text)
-        self.output_message(m)
+        return self.output_message(m)
         
     def found(self, text, sub_code=''):
         if sub_code == '':
@@ -57,7 +62,7 @@ class Messenger:
         else:
             code = '[FOUND:{0}]'.format(sub_code)
         m = self.make_message(code, text)
-        self.output_message(m)
+        return self.output_message(m)
 
     def info(self, text, sub_code=''):
         if sub_code == '':
@@ -65,7 +70,7 @@ class Messenger:
         else:
             code = '[INFO:{0}]'.format(sub_code)
         m = self.make_message(code, text)
-        self.output_message(m)
+        return self.output_message(m)
 
 
 # Make global messenger class
@@ -192,13 +197,13 @@ def parse_file(file_path, yara_rules):
     # Don't need yara rules for parsing each file now, as it's passed as an arg
     # yara_rules = yara.load(compiled_rules_path)  # For multi processing, want to make this global
     matches = []
+    message = ""
     try:
         matches = yara_rules.match(file_path)
     except yara.Error as err:
-        MSG.error('{0} Yara.Error parsing this file: {1}'.format(file_path, err))
+        message = MSG.error('{0} Yara.Error parsing this file: {1}'.format(file_path, err))
     except MyError as err:
-        MSG.error('{0}: Unknown error: {1}'.format(file_path, err))
-
+        message = MSG.error('{0}: Unknown error: {1}'.format(file_path, err))
     # If any matches found, create one string containing all matches within file
     if len(matches) > 0:
         str_matches = ''
@@ -209,9 +214,10 @@ def parse_file(file_path, yara_rules):
             if count < len(matches) - 1:
                 str_matches += ', '
             count += 1
-        MSG.found('{0}: {1} matches: {2}'.format(file_path, len(matches), str_matches))
+        message = MSG.found('{0}: {1} matches: {2}'.format(file_path, len(matches), str_matches))
     else:
-        MSG.info('{0}:  No matches'.format(file_path))
+        message = MSG.info('{0}:  No matches'.format(file_path))
+    return message
 
 
 def split_list(input_list, num_sub_lists):
@@ -241,21 +247,33 @@ def worker(file_list):
     :return: list of results for each file
     """
 
+    import time
+
     global MSG      # Specify global messenger
     global config   # Specify global config
 
     # Load rules from global variable
     yara_rules = yara.load(config['compiled_path'])
-
+    results = []
     for path in file_list:
         MSG.info('Parsing {}'.format(path))
-        parse_file(path, yara_rules)
+        #parse_file(path, yara_rules)
+        results.append(parse_file(path, yara_rules))
+    return results
 
-    return
+to_log = []
+def log_result(result):
+    #Writing directly to file from here causes broken lines, likely IO limitation
+    if isinstance(result, list):
+        for r1 in result:
+            for r2 in r1:
+                if r2 is not None:
+                    to_log.append(r2)
+    elif isinstance(result, str):
+        to_log.append(result)
 
 
 def main(conf):
-
     # Add and process arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('rules_path', help="Directory containing .yar files to compile and search for")
@@ -265,8 +283,7 @@ def main(conf):
     parser.add_argument("-l", "--log", help="Output to specified log file")
     parser.add_argument("-m", "--maxsize", type=int, help="Set maximum file size (MB)")
     parser.add_argument("-c", "--cores", help="Number of cores to use (defaults to number on system if unspecified)")
-    parser.add_argument("-x", "--existing_rules", help="if specified, look for .rules file in same path as script ",
-                        action="store_false")
+    parser.add_argument("-x", "--existing_rules", help="if specified, look for .rules file in same path as script ")
     args = parser.parse_args()
     if args.errors:
         conf["errors"] = True
@@ -319,7 +336,11 @@ def main(conf):
         for name in file_names:
             path = os.path.join(root, name)
             # Check for file size
-            mb = round(os.path.getsize(path) / 1024 / 1024)
+            try:
+                mb = round(os.path.getsize(path) / 1024 / 1024)
+            except:
+                MSG.error("Unable to read file " +path +" Check permissions?")
+                continue
             if mb > conf['maxsize']:
                 MSG.error("{0} ({1}MB): File larger than maxsize ({2}MB)".format(path, mb, conf['maxsize']))
             else:
@@ -338,11 +359,16 @@ def main(conf):
     # Record the start time
     start_time = time.time()
 
-    results = pool.map(worker, lists_for_cores)
+    #results = pool.map(worker, lists_for_cores)
+    r = pool.map_async(worker, lists_for_cores, callback=log_result)
+    r.wait()
+    pool.close()
+    pool.join()
 
     # Record the end time
     end_time = time.time()
     MSG.info('{0} parsed in {1} seconds'.format(len(list_files), end_time - start_time))
+
 
 
     """
@@ -352,9 +378,14 @@ def main(conf):
             MSG.info('Parsing {0}'.format(file_path))   # file_path only prints 'None'
             pass
     """
-    MSG.info("Finished")
-    exit(0)
 
+    MSG.info("Finished")
+    log_file_path = "yarascan_{0}.txt".format(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    with open(log_file_path, 'w') as log_file:
+        if to_log:
+            for line in to_log:
+                log_file.write(str(line) + "\n")
 
 if __name__ == '__main__':
     main(config)
+    exit(0)
