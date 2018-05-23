@@ -37,6 +37,10 @@ pyarascanner.py [-h] [-e] [-a] [-l LOG] [-m MAXSIZE] rules_path scan_path
 * -l LOG, --log LOG     Output to specified log file
 * -m MAXSIZE, --maxsize MAXSIZE
                         Set maximum file size (MB)
+### Known Problems
+
+* Problematic files can cause a hang in the multiprocessing with each thread needing to finis
+* Seperate log files produced for each thread
 
 ## Built With
 
