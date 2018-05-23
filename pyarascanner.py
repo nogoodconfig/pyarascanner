@@ -283,7 +283,7 @@ def main(conf):
     parser.add_argument("-l", "--log", help="Output to specified log file")
     parser.add_argument("-m", "--maxsize", type=int, help="Set maximum file size (MB)")
     parser.add_argument("-c", "--cores", help="Number of cores to use (defaults to number on system if unspecified)")
-    parser.add_argument("-x", "--existing_rules", help="if specified, look for .rules file in same path as script ")
+    parser.add_argument("-x", "--existing_rules", help="if specified, look for .rules file in same path as script ", action="store_true")
     args = parser.parse_args()
     if args.errors:
         conf["errors"] = True
@@ -313,7 +313,9 @@ def main(conf):
     if (os.path.exists(args.rules_path)) and (os.path.exists(args.scan_path)):
         conf["rules_path"] = args.rules_path
         # Check to see if existing rules file should be used
-        if args.existing_rules:
+        print(args.existing_rules)
+        if args.existing_rules is True:
+
             # Look for 'compiled_yara_rules.rules' in working directory
             if os.path.isfile(conf["compiled_path"]) is True:
                 MSG.info("Existing rules file found, using that")
@@ -323,6 +325,7 @@ def main(conf):
                     "Ensure {0} exists in same path as script, or remove '-x' switch".format(conf["compiled_path"]))
                 exit(1)
         else:
+            MSG.info("Compiling rules from {}".format(conf["rules_path"]))
             compile_rules(conf["rules_path"], conf["compiled_path"])
         conf["scan_path"] = args.scan_path
     else:
@@ -332,7 +335,7 @@ def main(conf):
     # Build list of files to process, conduct pre-processing
     MSG.info("BUILDING FILE LIST FOR PARSING")
     list_files = []
-    for root, directories, file_names in os.walk(conf['scan_path']):
+    for root, directories, file_names in os.walk(conf["scan_path"]):
         for name in file_names:
             path = os.path.join(root, name)
             # Check for file size
@@ -348,14 +351,14 @@ def main(conf):
                 list_files.append(path)
 
     # Build process pool with specified number of workers
-    pool = multiprocessing.Pool(processes=conf['cores'])
+    pool = multiprocessing.Pool(processes=conf["cores"])
 
     # Split list_files into sub lists for each sub process
-    MSG.info('Splitting input file list into {0} sub lists for sub-processes')
+    MSG.info("Splitting input file list into {0} sub lists for sub-processes".format(conf["cores"]))
     lists_for_cores = split_list(list_files, conf['cores'])
 
     # Pass the work to separate workers, one for each sub process
-    MSG.info('BEGINNING MULTI-THREADED PARSING OF FILES')
+    MSG.info("BEGINNING MULTI-THREADED PARSING OF FILES")
     # Record the start time
     start_time = time.time()
 
@@ -367,7 +370,7 @@ def main(conf):
 
     # Record the end time
     end_time = time.time()
-    MSG.info('{0} parsed in {1} seconds'.format(len(list_files), end_time - start_time))
+    MSG.info("{0} parsed in {1} seconds".format(len(list_files), end_time - start_time))
 
 
 
