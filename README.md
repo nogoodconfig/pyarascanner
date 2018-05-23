@@ -40,7 +40,7 @@ pyarascanner.py [-h] [-e] [-a] [-l LOG] [-m MAXSIZE] rules_path scan_path
 ### Known Problems
 
 * Problematic files can cause a hang in the multiprocessing with each thread needing to finis
-* Seperate log files produced for each thread
+* Only scan results are logged, no script messages (including yara compiling)
 
 ## Built With
 
