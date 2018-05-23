@@ -1,6 +1,6 @@
 # PyaraScanner
 
-A simple many-rules to many-files YARA scanner for incident response or malware zoos
+A multithreaded many-rules to many-files YARA scanner for incident response or malware zoos
 ## Prerequisites
 
 YARA installed and Python 3.0-3.5 with the Yara-Python package
@@ -21,22 +21,25 @@ Alternatively, you can download an easy installer which should download everythi
 To run with default settings, just specify a folder for .yar rules and a starting point for files to scan. All directories for both inputs are scanned recursively
 
 ```
-pyarascanner.py Yara_Rules C:\
+pyarascanner.py C:\Yara_Rules_Path C:\Scan_Directory
 ```
 Full syntax:
 
 ```
-pyarascanner.py [-h] [-e] [-a] [-l LOG] [-m MAXSIZE] rules_path scan_path
+pyarascanner.py [-h] [-e] [-a] [-l LOG] [-m MAXSIZE] [-c CORES] [-x EXISTING_RULES] rules_path scan_path
+
 ```
 
 ### Optional Arguments
 
-* -h, --help            Show help
-* -e, --errors          Show all errors
-* -a, --alerts          Show alerts only
-* -l LOG, --log LOG     Output to specified log file
-* -m MAXSIZE, --maxsize MAXSIZE
-                        Set maximum file size (MB)
+* -h                                            show this help message and exit
+* -e                                          Show all errors
+* -a                                          Show alerts only
+* -l LOG                                     Output to specified log file
+* -m MAXSIZE                         Set maximum file size (MB)
+* -c CORES                               Number of cores to use (defaults to number on system if unspecified)
+* -x EXISTING_RULES    If specified, look for .rules file in same path as
+                        script
 ### Known Problems
 
 * Problematic files can cause a hang in the multiprocessing with each thread needing to finis
